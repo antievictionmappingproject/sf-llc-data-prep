@@ -1,0 +1,879 @@
+library(RPostgres)
+library(dplyr)
+library(janitor)
+
+## Loading required package: DBI
+pw <- {
+  "password"
+}
+
+con <- dbConnect(RPostgres::Postgres(), dbname = "azaddb",
+                 host = "localhost", port = 5432,
+                 user = "azad", password = pw, bigint = "numeric")
+
+data_llc <- readr::read_csv('~/R_Proj/data/LPMASTER.csv')
+
+data_llc <- data_llc %>% mutate(agent_address = case_when(
+  !is.na(agent_address_2) ~ agent_address_2,
+  is.na(agent_address_2) ~ agent_address_1,
+  TRUE ~ agent_address_1
+))
+
+'%!in%' <- function(x,y)!('%in%'(x,y))
+data_llc <- readr::read_csv('/home/azad/data/LPMASTER.csv')
+
+remove_1 <- c("ADDR", "SAME", ")", "SAME", ")",   "EXEC",     "70)",     "46)",  "20634)",      "1)",    "348)",      "ES",   "9282)", "EX", "0)", "E", "2)",  "X",    "181)",   "2723)", 
+              "6)", "208)",  "6", "RIEZ",  "PIER", "9", "GP1", "GP",  "OREXCO",  "SAMECA",    "476)", "EZ", "N",  "11", "LEE" ,  "1348)", "278)", "9)", "EC", "RC )",
+              "`", "1",   "36)",  "3665 H", "3X",    "446)",     "48)", "CEO", "WZ", ".",  "% KTBS",     "`EX",    "170)",   "2798)",    "282)",  "3 RIEZ", "EX"   ,"FLOOR",  "92199)", "TOWER")
+
+remove_2 <- c("EEDDG", "POB 9", "GGGGG", 	"RR 2", "S", "AA", "2", "NONE" )
+
+data_llc <- (data_llc %>% filter(partner_1_address %!in% remove_1))
+data_llc <- (data_llc %>% filter(partner_1_address %!in% remove_2))
+
+remove_others <- (data_llc %>% filter(nchar( partner_1_address) < 6))$partner_1_address
+data_llc <- (data_llc %>% filter(partner_1_address %!in% remove_others))
+
+
+data_llc <- data_llc %>% mutate(year = substr(file_date, 1, 4))
+
+##### matches_partner_1_18_18 ####
+
+data_ll_partner_1_18 <- split((data_llc %>% filter(year == "2018")), (0:nrow(data_llc %>% filter(year == "2018")) %/% (nrow(data_llc %>% filter(year == "2018")) / 2) ))
+
+
+dbWriteTable(con, "llc_data_partner_1", data_ll_partner_1_18[[1]] %>% select(file_number,
+                                                                             partner_1_address, 
+                                                                             partner_1_city, 
+                                                                             partner_1_state,
+                                                                             partner_1_zip) %>% filter(!is.na(partner_1_address)), overwrite = TRUE, row.names = FALSE)
+
+dbSendQuery(con, "DROP TABLE IF EXISTS llc_data_partner_11;")
+dbSendQuery(con, "CREATE TABLE llc_data_partner_11 AS
+                                   SELECT
+                                   file_number,
+                                   partner_1_address, 
+                                   partner_1_city, 
+                                   partner_1_state,
+                                   partner_1_zip,
+                                   phraseto_tsquery('simple', unnest(postal_normalize(concat_ws(', ', partner_1_address, partner_1_city, partner_1_state, partner_1_zip )))) AS tsq
+                                   FROM llc_data_partner_1;
+                                   ")
+dbSendQuery(con, "CREATE INDEX llc_data_partner_11_idx ON llc_data_partner_11 USING GIST (tsq);" )
+
+dbSendQuery(con,  "CREATE TABLE llc_partner_12018 AS SELECT
+                                   assessors_address.*,
+                                   llc_data_partner_11.file_number
+                                   FROM assessors_address
+                                   JOIN llc_data_partner_11 ON (assessors_address.ts @@ llc_data_partner_11.tsq);") 
+
+# partner_1 2
+dbWriteTable(con, "llc_data_partner_1", data_ll_partner_1_18[[2]] %>% select(file_number,
+                                                                             partner_1_address, 
+                                                                             partner_1_city, 
+                                                                             partner_1_state,
+                                                                             partner_1_zip) %>% filter(!is.na(partner_1_address)), overwrite = TRUE, row.names = FALSE)
+
+dbSendQuery(con, "DROP TABLE IF EXISTS llc_data_partner_11;")
+dbSendQuery(con, "CREATE TABLE llc_data_partner_11 AS
+                                   SELECT
+                                   file_number,
+                                   partner_1_address, 
+                                   partner_1_city, 
+                                   partner_1_state,
+                                   partner_1_zip,
+                                   phraseto_tsquery('simple', unnest(postal_normalize(concat_ws(', ', partner_1_address, partner_1_city, partner_1_state, partner_1_zip )))) AS tsq
+                                   FROM llc_data_partner_1;
+                                   ")
+dbSendQuery(con, "CREATE INDEX llc_data_partner_11_idx ON llc_data_partner_11 USING GIST (tsq);" )
+
+dbSendQuery(con,  "CREATE TABLE llc_partner_12018_2 AS SELECT
+                                   assessors_address.*,
+                                   llc_data_partner_11.file_number
+                                   FROM assessors_address
+                                   JOIN llc_data_partner_11 ON (assessors_address.ts @@ llc_data_partner_11.tsq);") 
+
+
+
+##### matches_partner_1_17_17 ####
+
+
+data_ll_partner_1_17 <- split((data_llc %>% filter(year == "2017")), (0:nrow(data_llc %>% filter(year == "2017")) %/% (nrow(data_llc %>% filter(year == "2017")) / 2) ))
+
+
+dbWriteTable(con, "llc_data_partner_1", data_ll_partner_1_17[[1]] %>% select(file_number,
+                                                                             partner_1_address, 
+                                                                             partner_1_city, 
+                                                                             partner_1_state,
+                                                                             partner_1_zip) %>% filter(!is.na(partner_1_address)), overwrite = TRUE, row.names = FALSE)
+
+dbSendQuery(con, "DROP TABLE IF EXISTS llc_data_partner_11;")
+dbSendQuery(con, "CREATE TABLE llc_data_partner_11 AS
+                                   SELECT
+                                   file_number,
+                                   partner_1_address, 
+                                   partner_1_city, 
+                                   partner_1_state,
+                                   partner_1_zip,
+                                   phraseto_tsquery('simple', unnest(postal_normalize(concat_ws(', ', partner_1_address, partner_1_city, partner_1_state, partner_1_zip )))) AS tsq
+                                   FROM llc_data_partner_1;
+                                   ")
+dbSendQuery(con, "CREATE INDEX llc_data_partner_11_idx ON llc_data_partner_11 USING GIST (tsq);" )
+
+dbSendQuery(con,  "CREATE TABLE llc_partner_12017 AS SELECT
+                                   assessors_address.*,
+                                   llc_data_partner_11.file_number
+                                   FROM assessors_address
+                                   JOIN llc_data_partner_11 ON (assessors_address.ts @@ llc_data_partner_11.tsq);") 
+
+# partner_1 2
+dbWriteTable(con, "llc_data_partner_1", data_ll_partner_1_17[[2]] %>% select(file_number,
+                                                                             partner_1_address, 
+                                                                             partner_1_city, 
+                                                                             partner_1_state,
+                                                                             partner_1_zip) %>% filter(!is.na(partner_1_address)), overwrite = TRUE, row.names = FALSE)
+
+dbSendQuery(con, "DROP TABLE IF EXISTS llc_data_partner_11;")
+dbSendQuery(con, "CREATE TABLE llc_data_partner_11 AS
+                                   SELECT
+                                   file_number,
+                                   partner_1_address, 
+                                   partner_1_city, 
+                                   partner_1_state,
+                                   partner_1_zip,
+                                   phraseto_tsquery('simple', unnest(postal_normalize(concat_ws(', ', partner_1_address, partner_1_city, partner_1_state, partner_1_zip )))) AS tsq
+                                   FROM llc_data_partner_1;
+                                   ")
+dbSendQuery(con, "CREATE INDEX llc_data_partner_11_idx ON llc_data_partner_11 USING GIST (tsq);" )
+
+dbSendQuery(con,  "CREATE TABLE llc_partner_12017_2 AS SELECT
+                                   assessors_address.*,
+                                   llc_data_partner_11.file_number
+                                   FROM assessors_address
+                                   JOIN llc_data_partner_11 ON (assessors_address.ts @@ llc_data_partner_11.tsq);") 
+
+##### matches_partner_1_16_16 ####
+
+data_ll_partner_1_16 <- split((data_llc %>% filter(year == "2016")), (0:nrow(data_llc %>% filter(year == "2016")) %/% (nrow(data_llc %>% filter(year == "2016")) / 2) ))
+
+
+dbWriteTable(con, "llc_data_partner_1", data_ll_partner_1_16[[1]] %>% select(file_number,
+                                                                             partner_1_address, 
+                                                                             partner_1_city, 
+                                                                             partner_1_state,
+                                                                             partner_1_zip) %>% filter(!is.na(partner_1_address)), overwrite = TRUE, row.names = FALSE)
+
+dbSendQuery(con, "DROP TABLE IF EXISTS llc_data_partner_11;")
+dbSendQuery(con, "CREATE TABLE llc_data_partner_11 AS
+                                   SELECT
+                                   file_number,
+                                   partner_1_address, 
+                                   partner_1_city, 
+                                   partner_1_state,
+                                   partner_1_zip,
+                                   phraseto_tsquery('simple', unnest(postal_normalize(concat_ws(', ', partner_1_address, partner_1_city, partner_1_state, partner_1_zip )))) AS tsq
+                                   FROM llc_data_partner_1;
+                                   ")
+dbSendQuery(con, "CREATE INDEX llc_data_partner_11_idx ON llc_data_partner_11 USING GIST (tsq);" )
+
+dbSendQuery(con,  "CREATE TABLE llc_partner_12016 AS SELECT
+                                   assessors_address.*,
+                                   llc_data_partner_11.file_number
+                                   FROM assessors_address
+                                   JOIN llc_data_partner_11 ON (assessors_address.ts @@ llc_data_partner_11.tsq);") 
+
+# partner_1 2
+dbWriteTable(con, "llc_data_partner_1", data_ll_partner_1_16[[2]] %>% select(file_number,
+                                                                             partner_1_address, 
+                                                                             partner_1_city, 
+                                                                             partner_1_state,
+                                                                             partner_1_zip) %>% filter(!is.na(partner_1_address)), overwrite = TRUE, row.names = FALSE)
+
+dbSendQuery(con, "DROP TABLE IF EXISTS llc_data_partner_11;")
+dbSendQuery(con, "CREATE TABLE llc_data_partner_11 AS
+                                   SELECT
+                                   file_number,
+                                   partner_1_address, 
+                                   partner_1_city, 
+                                   partner_1_state,
+                                   partner_1_zip,
+                                   phraseto_tsquery('simple', unnest(postal_normalize(concat_ws(', ', partner_1_address, partner_1_city, partner_1_state, partner_1_zip )))) AS tsq
+                                   FROM llc_data_partner_1;
+                                   ")
+dbSendQuery(con, "CREATE INDEX llc_data_partner_11_idx ON llc_data_partner_11 USING GIST (tsq);" )
+
+dbSendQuery(con,  "CREATE TABLE llc_partner_12016_2 AS SELECT
+                                   assessors_address.*,
+                                   llc_data_partner_11.file_number
+                                   FROM assessors_address
+                                   JOIN llc_data_partner_11 ON (assessors_address.ts @@ llc_data_partner_11.tsq);") 
+
+
+##### matches_partner_1_15_15 ####
+
+data_ll_partner_1_15 <- split((data_llc %>% filter(year == "2015")), (0:nrow(data_llc %>% filter(year == "2015")) %/% (nrow(data_llc %>% filter(year == "2015")) / 2) ))
+
+dbWriteTable(con, "llc_data_partner_1", data_ll_partner_1_15[[1]] %>% select(file_number,
+                                                                             partner_1_address, 
+                                                                             partner_1_city, 
+                                                                             partner_1_state,
+                                                                             partner_1_zip) %>% filter(!is.na(partner_1_address)), overwrite = TRUE, row.names = FALSE)
+
+dbSendQuery(con, "DROP TABLE IF EXISTS llc_data_partner_11;")
+dbSendQuery(con, "CREATE TABLE llc_data_partner_11 AS
+                                   SELECT
+                                   file_number,
+                                   partner_1_address, 
+                                   partner_1_city, 
+                                   partner_1_state,
+                                   partner_1_zip,
+                                   phraseto_tsquery('simple', unnest(postal_normalize(concat_ws(', ', partner_1_address, partner_1_city, partner_1_state, partner_1_zip )))) AS tsq
+                                   FROM llc_data_partner_1;
+                                   ")
+dbSendQuery(con, "CREATE INDEX llc_data_partner_11_idx ON llc_data_partner_11 USING GIST (tsq);" )
+
+dbSendQuery(con,  "CREATE TABLE llc_partner_12015 AS SELECT
+                                   assessors_address.*,
+                                   llc_data_partner_11.file_number
+                                   FROM assessors_address
+                                   JOIN llc_data_partner_11 ON (assessors_address.ts @@ llc_data_partner_11.tsq);") 
+
+# partner_1 2
+dbWriteTable(con, "llc_data_partner_1", data_ll_partner_1_15[[2]] %>% select(file_number,
+                                                                             partner_1_address, 
+                                                                             partner_1_city, 
+                                                                             partner_1_state,
+                                                                             partner_1_zip) %>% filter(!is.na(partner_1_address)), overwrite = TRUE, row.names = FALSE)
+
+dbSendQuery(con, "DROP TABLE IF EXISTS llc_data_partner_11;")
+dbSendQuery(con, "CREATE TABLE llc_data_partner_11 AS
+                                   SELECT
+                                   file_number,
+                                   partner_1_address, 
+                                   partner_1_city, 
+                                   partner_1_state,
+                                   partner_1_zip,
+                                   phraseto_tsquery('simple', unnest(postal_normalize(concat_ws(', ', partner_1_address, partner_1_city, partner_1_state, partner_1_zip )))) AS tsq
+                                   FROM llc_data_partner_1;
+                                   ")
+dbSendQuery(con, "CREATE INDEX llc_data_partner_11_idx ON llc_data_partner_11 USING GIST (tsq);" )
+
+dbSendQuery(con,  "CREATE TABLE llc_partner_12015_2 AS SELECT
+                                   assessors_address.*,
+                                   llc_data_partner_11.file_number
+                                   FROM assessors_address
+                                   JOIN llc_data_partner_11 ON (assessors_address.ts @@ llc_data_partner_11.tsq);") 
+
+##### matches_partner_1_14_14 ####
+
+data_ll_partner_1_14 <- split((data_llc %>% filter(year == "2014")), (0:nrow(data_llc %>% filter(year == "2014")) %/% (nrow(data_llc %>% filter(year == "2014")) / 2) ))
+
+
+dbWriteTable(con, "llc_data_partner_1", data_ll_partner_1_14[[1]] %>% select(file_number,
+                                                                             partner_1_address, 
+                                                                             partner_1_city, 
+                                                                             partner_1_state,
+                                                                             partner_1_zip) %>% filter(!is.na(partner_1_address)), overwrite = TRUE, row.names = FALSE)
+
+dbSendQuery(con, "DROP TABLE IF EXISTS llc_data_partner_11;")
+dbSendQuery(con, "CREATE TABLE llc_data_partner_11 AS
+                                   SELECT
+                                   file_number,
+                                   partner_1_address, 
+                                   partner_1_city, 
+                                   partner_1_state,
+                                   partner_1_zip,
+                                   phraseto_tsquery('simple', unnest(postal_normalize(concat_ws(', ', partner_1_address, partner_1_city, partner_1_state, partner_1_zip )))) AS tsq
+                                   FROM llc_data_partner_1;
+                                   ")
+dbSendQuery(con, "CREATE INDEX llc_data_partner_11_idx ON llc_data_partner_11 USING GIST (tsq);" )
+
+dbSendQuery(con,  "CREATE TABLE llc_partner_12014 AS SELECT
+                                   assessors_address.*,
+                                   llc_data_partner_11.file_number
+                                   FROM assessors_address
+                                   JOIN llc_data_partner_11 ON (assessors_address.ts @@ llc_data_partner_11.tsq);") 
+
+# partner_1 2
+dbWriteTable(con, "llc_data_partner_1", data_ll_partner_1_14[[2]] %>% select(file_number,
+                                                                             partner_1_address, 
+                                                                             partner_1_city, 
+                                                                             partner_1_state,
+                                                                             partner_1_zip) %>% filter(!is.na(partner_1_address)), overwrite = TRUE, row.names = FALSE)
+
+dbSendQuery(con, "DROP TABLE IF EXISTS llc_data_partner_11;")
+dbSendQuery(con, "CREATE TABLE llc_data_partner_11 AS
+                                   SELECT
+                                   file_number,
+                                   partner_1_address, 
+                                   partner_1_city, 
+                                   partner_1_state,
+                                   partner_1_zip,
+                                   phraseto_tsquery('simple', unnest(postal_normalize(concat_ws(', ', partner_1_address, partner_1_city, partner_1_state, partner_1_zip )))) AS tsq
+                                   FROM llc_data_partner_1;
+                                   ")
+dbSendQuery(con, "CREATE INDEX llc_data_partner_11_idx ON llc_data_partner_11 USING GIST (tsq);" )
+
+dbSendQuery(con,  "CREATE TABLE llc_partner_12014_2 AS SELECT
+                                   assessors_address.*,
+                                   llc_data_partner_11.file_number
+                                   FROM assessors_address
+                                   JOIN llc_data_partner_11 ON (assessors_address.ts @@ llc_data_partner_11.tsq);") 
+
+##### matches_partner_1_13_13 ####
+
+data_ll_partner_1_13 <- split((data_llc %>% filter(year == "2013")), (0:nrow(data_llc %>% filter(year == "2013")) %/% (nrow(data_llc %>% filter(year == "2013")) / 2) ))
+
+dbWriteTable(con, "llc_data_partner_1", data_ll_partner_1_13[[1]] %>% select(file_number,
+                                                                             partner_1_address, 
+                                                                             partner_1_city, 
+                                                                             partner_1_state,
+                                                                             partner_1_zip) %>% filter(!is.na(partner_1_address)), overwrite = TRUE, row.names = FALSE)
+
+dbSendQuery(con, "DROP TABLE IF EXISTS llc_data_partner_11;")
+dbSendQuery(con, "CREATE TABLE llc_data_partner_11 AS
+                                   SELECT
+                                   file_number,
+                                   partner_1_address, 
+                                   partner_1_city, 
+                                   partner_1_state,
+                                   partner_1_zip,
+                                   phraseto_tsquery('simple', unnest(postal_normalize(concat_ws(', ', partner_1_address, partner_1_city, partner_1_state, partner_1_zip )))) AS tsq
+                                   FROM llc_data_partner_1;
+                                   ")
+dbSendQuery(con, "CREATE INDEX llc_data_partner_11_idx ON llc_data_partner_11 USING GIST (tsq);" )
+
+dbSendQuery(con,  "CREATE TABLE llc_partner_12013 AS SELECT
+                                   assessors_address.*,
+                                   llc_data_partner_11.file_number
+                                   FROM assessors_address
+                                   JOIN llc_data_partner_11 ON (assessors_address.ts @@ llc_data_partner_11.tsq);") 
+
+# partner_1 2
+dbWriteTable(con, "llc_data_partner_1", data_ll_partner_1_13[[2]] %>% select(file_number,
+                                                                             partner_1_address, 
+                                                                             partner_1_city, 
+                                                                             partner_1_state,
+                                                                             partner_1_zip) %>% filter(!is.na(partner_1_address)), overwrite = TRUE, row.names = FALSE)
+
+dbSendQuery(con, "DROP TABLE IF EXISTS llc_data_partner_11;")
+dbSendQuery(con, "CREATE TABLE llc_data_partner_11 AS
+                                   SELECT
+                                   file_number,
+                                   partner_1_address, 
+                                   partner_1_city, 
+                                   partner_1_state,
+                                   partner_1_zip,
+                                   phraseto_tsquery('simple', unnest(postal_normalize(concat_ws(', ', partner_1_address, partner_1_city, partner_1_state, partner_1_zip )))) AS tsq
+                                   FROM llc_data_partner_1;
+                                   ")
+dbSendQuery(con, "CREATE INDEX llc_data_partner_11_idx ON llc_data_partner_11 USING GIST (tsq);" )
+
+dbSendQuery(con,  "CREATE TABLE llc_partner_12013_2 AS SELECT
+                                   assessors_address.*,
+                                   llc_data_partner_11.file_number
+                                   FROM assessors_address
+                                   JOIN llc_data_partner_11 ON (assessors_address.ts @@ llc_data_partner_11.tsq);") 
+
+##### matches_partner_1_12_12 ####
+
+data_ll_partner_1_12 <- split((data_llc %>% filter(year == "2012")), (0:nrow(data_llc %>% filter(year == "2012")) %/% (nrow(data_llc %>% filter(year == "2012")) / 2) ))
+
+dbWriteTable(con, "llc_data_partner_1", data_ll_partner_1_12[[1]] %>% select(file_number,
+                                                                             partner_1_address, 
+                                                                             partner_1_city, 
+                                                                             partner_1_state,
+                                                                             partner_1_zip) %>% filter(!is.na(partner_1_address)), overwrite = TRUE, row.names = FALSE)
+
+dbSendQuery(con, "DROP TABLE IF EXISTS llc_data_partner_11;")
+dbSendQuery(con, "CREATE TABLE llc_data_partner_11 AS
+                                   SELECT
+                                   file_number,
+                                   partner_1_address, 
+                                   partner_1_city, 
+                                   partner_1_state,
+                                   partner_1_zip,
+                                   phraseto_tsquery('simple', unnest(postal_normalize(concat_ws(', ', partner_1_address, partner_1_city, partner_1_state, partner_1_zip )))) AS tsq
+                                   FROM llc_data_partner_1;
+                                   ")
+dbSendQuery(con, "CREATE INDEX llc_data_partner_11_idx ON llc_data_partner_11 USING GIST (tsq);" )
+
+dbSendQuery(con,  "CREATE TABLE llc_partner_12012 AS SELECT
+                                   assessors_address.*,
+                                   llc_data_partner_11.file_number
+                                   FROM assessors_address
+                                   JOIN llc_data_partner_11 ON (assessors_address.ts @@ llc_data_partner_11.tsq);") 
+
+# partner_1 2
+dbWriteTable(con, "llc_data_partner_1", data_ll_partner_1_12[[2]] %>% select(file_number,
+                                                                             partner_1_address, 
+                                                                             partner_1_city, 
+                                                                             partner_1_state,
+                                                                             partner_1_zip) %>% filter(!is.na(partner_1_address)), overwrite = TRUE, row.names = FALSE)
+
+dbSendQuery(con, "DROP TABLE IF EXISTS llc_data_partner_11;")
+dbSendQuery(con, "CREATE TABLE llc_data_partner_11 AS
+                                   SELECT
+                                   file_number,
+                                   partner_1_address, 
+                                   partner_1_city, 
+                                   partner_1_state,
+                                   partner_1_zip,
+                                   phraseto_tsquery('simple', unnest(postal_normalize(concat_ws(', ', partner_1_address, partner_1_city, partner_1_state, partner_1_zip )))) AS tsq
+                                   FROM llc_data_partner_1;
+                                   ")
+dbSendQuery(con, "CREATE INDEX llc_data_partner_11_idx ON llc_data_partner_11 USING GIST (tsq);" )
+
+dbSendQuery(con,  "CREATE TABLE llc_partner_12012_2 AS SELECT
+                                   assessors_address.*,
+                                   llc_data_partner_11.file_number
+                                   FROM assessors_address
+                                   JOIN llc_data_partner_11 ON (assessors_address.ts @@ llc_data_partner_11.tsq);") 
+
+##### matches_partner_1_11_11 ####
+
+data_ll_partner_1_11 <- split((data_llc %>% filter(year == "2011")), (0:nrow(data_llc %>% filter(year == "2011")) %/% (nrow(data_llc %>% filter(year == "2011")) / 2) ))
+
+
+dbWriteTable(con, "llc_data_partner_1", data_ll_partner_1_11[[1]] %>% select(file_number,
+                                                                             partner_1_address, 
+                                                                             partner_1_city, 
+                                                                             partner_1_state,
+                                                                             partner_1_zip) %>% filter(!is.na(partner_1_address)), overwrite = TRUE, row.names = FALSE)
+
+dbSendQuery(con, "DROP TABLE IF EXISTS llc_data_partner_11;")
+dbSendQuery(con, "CREATE TABLE llc_data_partner_11 AS
+                                   SELECT
+                                   file_number,
+                                   partner_1_address, 
+                                   partner_1_city, 
+                                   partner_1_state,
+                                   partner_1_zip,
+                                   phraseto_tsquery('simple', unnest(postal_normalize(concat_ws(', ', partner_1_address, partner_1_city, partner_1_state, partner_1_zip )))) AS tsq
+                                   FROM llc_data_partner_1;
+                                   ")
+dbSendQuery(con, "CREATE INDEX llc_data_partner_11_idx ON llc_data_partner_11 USING GIST (tsq);" )
+
+dbSendQuery(con,  "CREATE TABLE llc_partner_12011 AS SELECT
+                                   assessors_address.*,
+                                   llc_data_partner_11.file_number
+                                   FROM assessors_address
+                                   JOIN llc_data_partner_11 ON (assessors_address.ts @@ llc_data_partner_11.tsq);") 
+
+# partner_1 2
+dbWriteTable(con, "llc_data_partner_1", data_ll_partner_1_11[[2]] %>% select(file_number,
+                                                                             partner_1_address, 
+                                                                             partner_1_city, 
+                                                                             partner_1_state,
+                                                                             partner_1_zip) %>% filter(!is.na(partner_1_address)), overwrite = TRUE, row.names = FALSE)
+
+dbSendQuery(con, "DROP TABLE IF EXISTS llc_data_partner_11;")
+dbSendQuery(con, "CREATE TABLE llc_data_partner_11 AS
+                                   SELECT
+                                   file_number,
+                                   partner_1_address, 
+                                   partner_1_city, 
+                                   partner_1_state,
+                                   partner_1_zip,
+                                   phraseto_tsquery('simple', unnest(postal_normalize(concat_ws(', ', partner_1_address, partner_1_city, partner_1_state, partner_1_zip )))) AS tsq
+                                   FROM llc_data_partner_1;
+                                   ")
+dbSendQuery(con, "CREATE INDEX llc_data_partner_11_idx ON llc_data_partner_11 USING GIST (tsq);" )
+
+dbSendQuery(con,  "CREATE TABLE llc_partner_12011_2 AS SELECT
+                                   assessors_address.*,
+                                   llc_data_partner_11.file_number
+                                   FROM assessors_address
+                                   JOIN llc_data_partner_11 ON (assessors_address.ts @@ llc_data_partner_11.tsq);") 
+
+##### matches_partner_1_10_10 ####
+
+data_ll_partner_1_10 <- split((data_llc %>% filter(year == "2010")), (0:nrow(data_llc %>% filter(year == "2010")) %/% (nrow(data_llc %>% filter(year == "2010")) / 2) ))
+
+dbWriteTable(con, "llc_data_partner_1", data_ll_partner_1_10[[1]] %>% select(file_number,
+                                                                             partner_1_address, 
+                                                                             partner_1_city, 
+                                                                             partner_1_state,
+                                                                             partner_1_zip) %>% filter(!is.na(partner_1_address)), overwrite = TRUE, row.names = FALSE)
+
+dbSendQuery(con, "DROP TABLE IF EXISTS llc_data_partner_11;")
+dbSendQuery(con, "CREATE TABLE llc_data_partner_11 AS
+                                   SELECT
+                                   file_number,
+                                   partner_1_address, 
+                                   partner_1_city, 
+                                   partner_1_state,
+                                   partner_1_zip,
+                                   phraseto_tsquery('simple', unnest(postal_normalize(concat_ws(', ', partner_1_address, partner_1_city, partner_1_state, partner_1_zip )))) AS tsq
+                                   FROM llc_data_partner_1;
+                                   ")
+dbSendQuery(con, "CREATE INDEX llc_data_partner_11_idx ON llc_data_partner_11 USING GIST (tsq);" )
+
+dbSendQuery(con,  "CREATE TABLE llc_partner_12010 AS SELECT
+                                   assessors_address.*,
+                                   llc_data_partner_11.file_number
+                                   FROM assessors_address
+                                   JOIN llc_data_partner_11 ON (assessors_address.ts @@ llc_data_partner_11.tsq);") 
+
+# partner_1 2
+dbWriteTable(con, "llc_data_partner_1", data_ll_partner_1_10[[2]] %>% select(file_number,
+                                                                             partner_1_address, 
+                                                                             partner_1_city, 
+                                                                             partner_1_state,
+                                                                             partner_1_zip) %>% filter(!is.na(partner_1_address)), overwrite = TRUE, row.names = FALSE)
+
+dbSendQuery(con, "DROP TABLE IF EXISTS llc_data_partner_11;")
+dbSendQuery(con, "CREATE TABLE llc_data_partner_11 AS
+                                   SELECT
+                                   file_number,
+                                   partner_1_address, 
+                                   partner_1_city, 
+                                   partner_1_state,
+                                   partner_1_zip,
+                                   phraseto_tsquery('simple', unnest(postal_normalize(concat_ws(', ', partner_1_address, partner_1_city, partner_1_state, partner_1_zip )))) AS tsq
+                                   FROM llc_data_partner_1;
+                                   ")
+dbSendQuery(con, "CREATE INDEX llc_data_partner_11_idx ON llc_data_partner_11 USING GIST (tsq);" )
+
+dbSendQuery(con,  "CREATE TABLE llc_partner_12010_2 AS SELECT
+                                   assessors_address.*,
+                                   llc_data_partner_11.file_number
+                                   FROM assessors_address
+                                   JOIN llc_data_partner_11 ON (assessors_address.ts @@ llc_data_partner_11.tsq);") 
+
+
+##### matches_partner_1_09_09 ####
+
+data_ll_partner_1_09 <- split((data_llc %>% filter(year == "2009")), (0:nrow(data_llc %>% filter(year == "2009")) %/% (nrow(data_llc %>% filter(year == "2009")) / 2) ))
+
+dbWriteTable(con, "llc_data_partner_1", data_ll_partner_1_09[[1]] %>% select(file_number,
+                                                                             partner_1_address, 
+                                                                             partner_1_city, 
+                                                                             partner_1_state,
+                                                                             partner_1_zip) %>% filter(!is.na(partner_1_address)), overwrite = TRUE, row.names = FALSE)
+
+dbSendQuery(con, "DROP TABLE IF EXISTS llc_data_partner_11;")
+dbSendQuery(con, "CREATE TABLE llc_data_partner_11 AS
+                                   SELECT
+                                   file_number,
+                                   partner_1_address, 
+                                   partner_1_city, 
+                                   partner_1_state,
+                                   partner_1_zip,
+                                   phraseto_tsquery('simple', unnest(postal_normalize(concat_ws(', ', partner_1_address, partner_1_city, partner_1_state, partner_1_zip )))) AS tsq
+                                   FROM llc_data_partner_1;
+                                   ")
+dbSendQuery(con, "CREATE INDEX llc_data_partner_11_idx ON llc_data_partner_11 USING GIST (tsq);" )
+
+dbSendQuery(con,  "CREATE TABLE llc_partner_12009 AS SELECT
+                                   assessors_address.*,
+                                   llc_data_partner_11.file_number
+                                   FROM assessors_address
+                                   JOIN llc_data_partner_11 ON (assessors_address.ts @@ llc_data_partner_11.tsq);") 
+
+# partner_1 2
+dbWriteTable(con, "llc_data_partner_1", data_ll_partner_1_09[[2]] %>% select(file_number,
+                                                                             partner_1_address, 
+                                                                             partner_1_city, 
+                                                                             partner_1_state,
+                                                                             partner_1_zip) %>% filter(!is.na(partner_1_address)), overwrite = TRUE, row.names = FALSE)
+
+dbSendQuery(con, "DROP TABLE IF EXISTS llc_data_partner_11;")
+dbSendQuery(con, "CREATE TABLE llc_data_partner_11 AS
+                                   SELECT
+                                   file_number,
+                                   partner_1_address, 
+                                   partner_1_city, 
+                                   partner_1_state,
+                                   partner_1_zip,
+                                   phraseto_tsquery('simple', unnest(postal_normalize(concat_ws(', ', partner_1_address, partner_1_city, partner_1_state, partner_1_zip )))) AS tsq
+                                   FROM llc_data_partner_1;
+                                   ")
+dbSendQuery(con, "CREATE INDEX llc_data_partner_11_idx ON llc_data_partner_11 USING GIST (tsq);" )
+
+dbSendQuery(con,  "CREATE TABLE llc_partner_12009_2 AS SELECT
+                                   assessors_address.*,
+                                   llc_data_partner_11.file_number
+                                   FROM assessors_address
+                                   JOIN llc_data_partner_11 ON (assessors_address.ts @@ llc_data_partner_11.tsq);") 
+
+##### matches_partner_1_08_08 ####
+
+data_ll_partner_1_08 <- split((data_llc %>% filter(year == "2008")), (0:nrow(data_llc %>% filter(year == "2008")) %/% (nrow(data_llc %>% filter(year == "2008")) / 2) ))
+
+
+dbWriteTable(con, "llc_data_partner_1", data_ll_partner_1_08[[1]] %>% select(file_number,
+                                                                             partner_1_address, 
+                                                                             partner_1_city, 
+                                                                             partner_1_state,
+                                                                             partner_1_zip) %>% filter(!is.na(partner_1_address)), overwrite = TRUE, row.names = FALSE)
+
+dbSendQuery(con, "DROP TABLE IF EXISTS llc_data_partner_11;")
+dbSendQuery(con, "CREATE TABLE llc_data_partner_11 AS
+                                   SELECT
+                                   file_number,
+                                   partner_1_address, 
+                                   partner_1_city, 
+                                   partner_1_state,
+                                   partner_1_zip,
+                                   phraseto_tsquery('simple', unnest(postal_normalize(concat_ws(', ', partner_1_address, partner_1_city, partner_1_state, partner_1_zip )))) AS tsq
+                                   FROM llc_data_partner_1;
+                                   ")
+dbSendQuery(con, "CREATE INDEX llc_data_partner_11_idx ON llc_data_partner_11 USING GIST (tsq);" )
+
+dbSendQuery(con,  "CREATE TABLE llc_partner_12008 AS SELECT
+                                   assessors_address.*,
+                                   llc_data_partner_11.file_number
+                                   FROM assessors_address
+                                   JOIN llc_data_partner_11 ON (assessors_address.ts @@ llc_data_partner_11.tsq);") 
+
+# partner_1 2
+dbWriteTable(con, "llc_data_partner_1", data_ll_partner_1_08[[2]] %>% select(file_number,
+                                                                             partner_1_address, 
+                                                                             partner_1_city, 
+                                                                             partner_1_state,
+                                                                             partner_1_zip) %>% filter(!is.na(partner_1_address)), overwrite = TRUE, row.names = FALSE)
+
+dbSendQuery(con, "DROP TABLE IF EXISTS llc_data_partner_11;")
+dbSendQuery(con, "CREATE TABLE llc_data_partner_11 AS
+                                   SELECT
+                                   file_number,
+                                   partner_1_address, 
+                                   partner_1_city, 
+                                   partner_1_state,
+                                   partner_1_zip,
+                                   phraseto_tsquery('simple', unnest(postal_normalize(concat_ws(', ', partner_1_address, partner_1_city, partner_1_state, partner_1_zip )))) AS tsq
+                                   FROM llc_data_partner_1;
+                                   ")
+dbSendQuery(con, "CREATE INDEX llc_data_partner_11_idx ON llc_data_partner_11 USING GIST (tsq);" )
+
+dbSendQuery(con,  "CREATE TABLE llc_partner_12008_2 AS SELECT
+                                   assessors_address.*,
+                                   llc_data_partner_11.file_number
+                                   FROM assessors_address
+                                   JOIN llc_data_partner_11 ON (assessors_address.ts @@ llc_data_partner_11.tsq);") 
+
+##### matches_partner_1_07_07 ####
+
+data_ll_partner_1_07 <- split((data_llc %>% filter(year == "2007")), (0:nrow(data_llc %>% filter(year == "2007")) %/% (nrow(data_llc %>% filter(year == "2007")) / 2) ))
+
+
+dbWriteTable(con, "llc_data_partner_1", data_ll_partner_1_07[[1]] %>% select(file_number,
+                                                                             partner_1_address, 
+                                                                             partner_1_city, 
+                                                                             partner_1_state,
+                                                                             partner_1_zip) %>% filter(!is.na(partner_1_address)), overwrite = TRUE, row.names = FALSE)
+
+dbSendQuery(con, "DROP TABLE IF EXISTS llc_data_partner_11;")
+dbSendQuery(con, "CREATE TABLE llc_data_partner_11 AS
+                                   SELECT
+                                   file_number,
+                                   partner_1_address, 
+                                   partner_1_city, 
+                                   partner_1_state,
+                                   partner_1_zip,
+                                   phraseto_tsquery('simple', unnest(postal_normalize(concat_ws(', ', partner_1_address, partner_1_city, partner_1_state, partner_1_zip )))) AS tsq
+                                   FROM llc_data_partner_1;
+                                   ")
+dbSendQuery(con, "CREATE INDEX llc_data_partner_11_idx ON llc_data_partner_11 USING GIST (tsq);" )
+
+dbSendQuery(con,  "CREATE TABLE llc_partner_12007 AS SELECT
+                                   assessors_address.*,
+                                   llc_data_partner_11.file_number
+                                   FROM assessors_address
+                                   JOIN llc_data_partner_11 ON (assessors_address.ts @@ llc_data_partner_11.tsq);") 
+
+# partner_1 2
+dbWriteTable(con, "llc_data_partner_1", data_ll_partner_1_07[[2]] %>% select(file_number,
+                                                                             partner_1_address, 
+                                                                             partner_1_city, 
+                                                                             partner_1_state,
+                                                                             partner_1_zip) %>% filter(!is.na(partner_1_address)), overwrite = TRUE, row.names = FALSE)
+
+dbSendQuery(con, "DROP TABLE IF EXISTS llc_data_partner_11;")
+dbSendQuery(con, "CREATE TABLE llc_data_partner_11 AS
+                                   SELECT
+                                   file_number,
+                                   partner_1_address, 
+                                   partner_1_city, 
+                                   partner_1_state,
+                                   partner_1_zip,
+                                   phraseto_tsquery('simple', unnest(postal_normalize(concat_ws(', ', partner_1_address, partner_1_city, partner_1_state, partner_1_zip )))) AS tsq
+                                   FROM llc_data_partner_1;
+                                   ")
+dbSendQuery(con, "CREATE INDEX llc_data_partner_11_idx ON llc_data_partner_11 USING GIST (tsq);" )
+
+dbSendQuery(con,  "CREATE TABLE llc_partner_12007_2 AS SELECT
+                                   assessors_address.*,
+                                   llc_data_partner_11.file_number
+                                   FROM assessors_address
+                                   JOIN llc_data_partner_11 ON (assessors_address.ts @@ llc_data_partner_11.tsq);") 
+
+##### matches_partner_1_06_06 ####
+
+data_ll_partner_1_06 <- split((data_llc %>% filter(year == "2006")), (0:nrow(data_llc %>% filter(year == "2006")) %/% (nrow(data_llc %>% filter(year == "2006")) / 2) ))
+
+dbWriteTable(con, "llc_data_partner_1", data_ll_partner_1_06[[1]] %>% select(file_number,
+                                                                             partner_1_address, 
+                                                                             partner_1_city, 
+                                                                             partner_1_state,
+                                                                             partner_1_zip) %>% filter(!is.na(partner_1_address)), overwrite = TRUE, row.names = FALSE)
+
+dbSendQuery(con, "DROP TABLE IF EXISTS llc_data_partner_11;")
+dbSendQuery(con, "CREATE TABLE llc_data_partner_11 AS
+                                   SELECT
+                                   file_number,
+                                   partner_1_address, 
+                                   partner_1_city, 
+                                   partner_1_state,
+                                   partner_1_zip,
+                                   phraseto_tsquery('simple', unnest(postal_normalize(concat_ws(', ', partner_1_address, partner_1_city, partner_1_state, partner_1_zip )))) AS tsq
+                                   FROM llc_data_partner_1;
+                                   ")
+dbSendQuery(con, "CREATE INDEX llc_data_partner_11_idx ON llc_data_partner_11 USING GIST (tsq);" )
+
+dbSendQuery(con,  "CREATE TABLE llc_partner_12006 AS SELECT
+                                   assessors_address.*,
+                                   llc_data_partner_11.file_number
+                                   FROM assessors_address
+                                   JOIN llc_data_partner_11 ON (assessors_address.ts @@ llc_data_partner_11.tsq);") 
+
+# partner_1 2
+dbWriteTable(con, "llc_data_partner_1", data_ll_partner_1_06[[2]] %>% select(file_number,
+                                                                             partner_1_address, 
+                                                                             partner_1_city, 
+                                                                             partner_1_state,
+                                                                             partner_1_zip) %>% filter(!is.na(partner_1_address)), overwrite = TRUE, row.names = FALSE)
+
+dbSendQuery(con, "DROP TABLE IF EXISTS llc_data_partner_11;")
+dbSendQuery(con, "CREATE TABLE llc_data_partner_11 AS
+                                   SELECT
+                                   file_number,
+                                   partner_1_address, 
+                                   partner_1_city, 
+                                   partner_1_state,
+                                   partner_1_zip,
+                                   phraseto_tsquery('simple', unnest(postal_normalize(concat_ws(', ', partner_1_address, partner_1_city, partner_1_state, partner_1_zip )))) AS tsq
+                                   FROM llc_data_partner_1;
+                                   ")
+dbSendQuery(con, "CREATE INDEX llc_data_partner_11_idx ON llc_data_partner_11 USING GIST (tsq);" )
+
+dbSendQuery(con,  "CREATE TABLE llc_partner_12006_2 AS SELECT
+                                   assessors_address.*,
+                                   llc_data_partner_11.file_number
+                                   FROM assessors_address
+                                   JOIN llc_data_partner_11 ON (assessors_address.ts @@ llc_data_partner_11.tsq);") 
+
+llc_partner_118_1 <- dbGetQuery(con, "SELECT * FROM
+           llc_partner_12018")
+llc_partner_118_2 <- dbGetQuery(con, "SELECT * FROM
+           llc_partner_12018_2")
+
+llc_partner_117_1 <- dbGetQuery(con, "SELECT * FROM
+           llc_partner_12017")
+
+llc_partner_117_2 <- dbGetQuery(con, "SELECT * FROM
+           llc_partner_12017_2")
+
+llc_partner_116_1 <- dbGetQuery(con, "SELECT * FROM
+           llc_partner_12016")
+
+llc_partner_116_2 <- dbGetQuery(con, "SELECT * FROM
+           llc_partner_12016_2")
+
+llc_partner_115_1 <- dbGetQuery(con, "SELECT * FROM
+           llc_partner_12015")
+
+llc_partner_115_2 <- dbGetQuery(con, "SELECT * FROM
+           llc_partner_12015_2")
+
+llc_partner_114_1 <- dbGetQuery(con, "SELECT * FROM
+           llc_partner_12014")
+
+llc_partner_114_2 <- dbGetQuery(con, "SELECT * FROM
+           llc_partner_12014_2")
+
+llc_partner_113_1 <- dbGetQuery(con, "SELECT * FROM
+           llc_partner_12013")
+
+llc_partner_113_2 <- dbGetQuery(con, "SELECT * FROM
+           llc_partner_12013_2")
+
+llc_partner_112_1 <- dbGetQuery(con, "SELECT * FROM
+           llc_partner_12012")
+
+llc_partner_112_2 <- dbGetQuery(con, "SELECT * FROM
+           llc_partner_12012_2")
+
+llc_partner_111_1 <- dbGetQuery(con, "SELECT * FROM
+           llc_partner_12011")
+
+llc_partner_111_2 <- dbGetQuery(con, "SELECT * FROM
+           llc_partner_12011_2")
+
+llc_partner_110_1 <- dbGetQuery(con, "SELECT * FROM
+           llc_partner_12010")
+
+llc_partner_110_2 <- dbGetQuery(con, "SELECT * FROM
+           llc_partner_12010_2")
+
+llc_partner_109_1 <- dbGetQuery(con, "SELECT * FROM
+           llc_partner_12009")
+
+llc_partner_109_2 <- dbGetQuery(con, "SELECT * FROM
+           llc_partner_12009_2")
+
+llc_partner_108_1 <- dbGetQuery(con, "SELECT * FROM
+           llc_partner_12008")
+
+llc_partner_108_2 <- dbGetQuery(con, "SELECT * FROM
+           llc_partner_12008_2")
+
+llc_partner_107_1 <- dbGetQuery(con, "SELECT * FROM
+           llc_partner_12007")
+
+llc_partner_107_2 <- dbGetQuery(con, "SELECT * FROM
+           llc_partner_12007_2")
+
+llc_partner_106_1 <- dbGetQuery(con, "SELECT * FROM
+           llc_partner_12006")
+
+llc_partner_106_2 <- dbGetQuery(con, "SELECT * FROM
+           llc_partner_12006_2")
+
+Pattern1 <- grep("llc_partner_1",names(.GlobalEnv),value=TRUE)
+listpat <- list(Pattern1)
+Pattern1_list <- do.call(list, mget(Pattern1))
+data_partner_1 <- do.call( bind_rows, Pattern1_list )
+data_partner_11 <- data_partner_1 %>% distinct(document_number, file_number, .keep_all = TRUE)
+readr::write_csv(data_partner_11, "~/R_Proj/data_out/var_partner_1_6-18.csv")
+
+# map2_df(Pattern1_list, names(Pattern1_list), ~ mutate(.x, ID = .y)) 
+# args1 <- list("document_number", "file_number", ".keep_all = TRUE")
+
+dbRemoveTable(con, "llc_partner_12006")
+dbRemoveTable(con, "llc_partner_12006_2")
+dbRemoveTable(con, "llc_partner_12007")
+dbRemoveTable(con, "llc_partner_12007_2")
+dbRemoveTable(con, "llc_partner_12008")
+dbRemoveTable(con, "llc_partner_12008_2" )
+dbRemoveTable(con, "llc_partner_12009")
+dbRemoveTable(con, "llc_partner_12009_2" )
+dbRemoveTable(con, "llc_partner_12010")
+dbRemoveTable(con, "llc_partner_12010_2" )
+dbRemoveTable(con, "llc_partner_12011")
+dbRemoveTable(con, "llc_partner_12011_2" )
+dbRemoveTable(con, "llc_partner_12012")
+dbRemoveTable(con, "llc_partner_12012_2" )
+dbRemoveTable(con, "llc_partner_12013")
+dbRemoveTable(con, "llc_partner_12013_2" )
+dbRemoveTable(con, "llc_partner_12014")
+dbRemoveTable(con, "llc_partner_12014_2" )
+dbRemoveTable(con, "llc_partner_12015")
+dbRemoveTable(con, "llc_partner_12015_2" )
+dbRemoveTable(con, "llc_partner_12016")
+dbRemoveTable(con, "llc_partner_12016_2" )
+dbRemoveTable(con, "llc_partner_12017")
+dbRemoveTable(con, "llc_partner_12017_2" )
+dbRemoveTable(con, "llc_partner_12018")
+dbRemoveTable(con, "llc_partner_12018_2" )
